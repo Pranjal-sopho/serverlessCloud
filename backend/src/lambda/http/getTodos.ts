@@ -1,12 +1,13 @@
 import 'source-map-support/register'
-import * as AWS  from 'aws-sdk'
+//import * as AWS  from 'aws-sdk'
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 import { parseUserId } from '../../auth/utils'
+import {getAllTodos} from '../../bussinessLogic/todo'
 
-const docClient = new AWS.DynamoDB.DocumentClient()
-const todosTable = process.env.TODOS_TABLE
-const userIdIndex = process.env.USER_ID_INDEX
+//const docClient = new AWS.DynamoDB.DocumentClient()
+//const todosTable = process.env.TODOS_TABLE
+//const userIdIndex = process.env.USER_ID_INDEX
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   // TODO: Get all TODO items for a current user
@@ -16,15 +17,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const userId = parseUserId(jwt)
 
   console.log("fetching all todos for user:", userId)
-  const result = await docClient.query({
-    TableName : todosTable,  
-    IndexName : userIdIndex,
-    KeyConditionExpression: 'userId = :userId',
-    ExpressionAttributeValues: {
-        ':userId': userId
-    }
-  }).promise()
-
+  const result = await getAllTodos(userId)
+  console.log("fetched todos:",result)
   if (result) {
     /*
     if(result.Items.length===0){

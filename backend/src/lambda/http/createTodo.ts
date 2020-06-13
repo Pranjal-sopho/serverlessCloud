@@ -1,18 +1,19 @@
 import 'source-map-support/register'
-import * as uuid from 'uuid'
+//import * as uuid from 'uuid'
 
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
 import {parseUserId} from '../../auth/utils'
-import * as AWS  from 'aws-sdk'
+//import * as AWS  from 'aws-sdk'
 
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
+import {createTodo} from '../../bussinessLogic/todo'
 
-const docClient = new AWS.DynamoDB.DocumentClient()
-const groupsTable = process.env.TODOS_TABLE
+//const docClient = new AWS.DynamoDB.DocumentClient()
+//const groupsTable = process.env.TODOS_TABLE
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('Processing event: ', event)
-  const todoId = uuid.v4()
+  //const todoId = uuid.v4()
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
 
   // TODO: Implement creating a new TODO item
@@ -21,19 +22,11 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const jwtToken = split[1]
   const userId = parseUserId(jwtToken);
 
-  const newItem = {
-    todoId: todoId,
-    // A new line to add
-    userId: userId, // Can be abbreviated to just "userId,"
-    done: false,
-    ...newTodo
-  }
-  console.log("adding new item to todos table", newItem)
+  console.log("adding new item to todos table", newTodo)
 
-  await docClient.put({
-    TableName: groupsTable,
-    Item: newItem
-  }).promise()
+  const result = await createTodo(newTodo,userId)
+
+  console.log(result)
 
   return {
     statusCode: 201,
@@ -42,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       'Access-Control-Allow-Credentials': true
     },
     body: JSON.stringify({
-      newItem
+      result
     })
   }
 }
