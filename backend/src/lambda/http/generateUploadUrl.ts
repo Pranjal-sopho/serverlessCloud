@@ -1,47 +1,27 @@
 import 'source-map-support/register'
-import * as AWS  from 'aws-sdk'
+//import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
+import {addAttachment, getPresignedUrl} from '../../bussinessLogic/todo'
 
-const imagesBucketName = process.env.IMAGES_S3_BUCKET
-const docClient = new AWS.DynamoDB.DocumentClient()
-const todosTable = process.env.TODOS_TABLE
+//const imagesBucketName = process.env.IMAGES_S3_BUCKET
+//const docClient = new AWS.DynamoDB.DocumentClient()
+//const todosTable = process.env.TODOS_TABLE
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const todoId = event.pathParameters.todoId
-  const imageId = uuid.v4()
+  //const todoId = event.pathParameters.todoId
+  const imageId:uuid = uuid.v4()
 
-  console.log("generating presigned url for todoId:",todoId)
+  console.log("generating presigned url ")
   // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
-  const s3 = new AWS.S3({
-    signatureVersion: 'v4' 
-  })
+  const presignedUrl = await getPresignedUrl(imageId)
+  //const presignedUrl = returnVal[0]
+  //const imageId = returnVal[1]
 
-  const presignedUrl = s3.getSignedUrl('putObject', { // The URL will allow to perform the PUT operation
-    Bucket: imagesBucketName, // Name of an S3 bucket
-    Key: imageId, // id of an object this URL allows access to
-    Expires: '300'  // A URL is only valid for 5 minutes
-  })
-
-  console.log("presignedUrl:", presignedUrl)
-  // update the corresponding item in todo table
-  const imageUrl = `https://${imagesBucketName}.s3.amazonaws.com/${imageId}`
-
-  const updatedTodoItem = {
-    TableName: todosTable,
-    Key: {
-      "todoId": todoId
-    },
-    UpdateExpression: `set attachmentUrl = :r`,
-    ExpressionAttributeValues:{
-        ":r":imageUrl
-    },
-    ReturnValues:"UPDATED_NEW"
-  }
-
-  await docClient.update(updatedTodoItem).promise()
-
-  console.log("todo table updated", updatedTodoItem)
+  //console.log("presignedUrl:", presignedUrl)
+  console.log("presigned received in generateuploadurl:",presignedUrl)
+  
+  const imageUrl = await addAttachment(event, imageId)
 
   return {
     statusCode: 200,
